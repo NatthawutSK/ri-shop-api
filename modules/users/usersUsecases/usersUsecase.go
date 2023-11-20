@@ -13,6 +13,7 @@ import (
 type IUserUsecase interface{
 	InsertCustomer(req *users.UserRegisterReq) (*users.UserPassport, error)
 	GetPassport(req *users.UserCredential) (*users.UserPassport, error)
+	RefreshPassport(req *users.UserRefreshCredential) (*users.UserPassport, error)
 }
 
 type UserUsecase struct {
@@ -53,14 +54,20 @@ func (u *UserUsecase) GetPassport(req *users.UserCredential) (*users.UserPasspor
 	}
 
 	// sign token
-	accessToken, err := riAuth.NewRiAuth(riAuth.Access, u.cfg.Jwt(), &users.UserClaims{
+	accessToken, err1 := riAuth.NewRiAuth(riAuth.Access, u.cfg.Jwt(), &users.UserClaims{
 		Id: user.Id,
 		RoleId: user.RoleId,
 	})
-	refreshToken, err := riAuth.NewRiAuth(riAuth.Refresh, u.cfg.Jwt(), &users.UserClaims{
+	if err1 != nil {
+		return nil, err
+	}
+	refreshToken, err2 := riAuth.NewRiAuth(riAuth.Refresh, u.cfg.Jwt(), &users.UserClaims{
 		Id: user.Id,
 		RoleId: user.RoleId,
 	})
+	if err2 != nil {
+		return nil, err
+	}
 
 
 	// set passport
@@ -82,4 +89,51 @@ func (u *UserUsecase) GetPassport(req *users.UserCredential) (*users.UserPasspor
 	}
 	return passport, nil
 
+}
+
+
+func (u *UserUsecase) RefreshPassport(req *users.UserRefreshCredential) (*users.UserPassport, error) {
+	claims, err := riAuth.ParseToken(u.cfg.Jwt(), req.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	//check oauth
+	oauth, err := u.usersRepository.FindOneOauth(req.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	//find profile
+	profile, err := u.usersRepository.GetProfile(oauth.UserId)
+	if err != nil {
+		return nil, err
+	}
+
+	newClaims := &users.UserClaims{
+		Id: profile.Id,
+		RoleId: profile.RoleId,
+	}
+
+	accessToken, err := riAuth.NewRiAuth(riAuth.Access, u.cfg.Jwt(), newClaims)
+	if err != nil {
+		return nil, err
+	}
+	refreshToken := riAuth.RepeatToken(u.cfg.Jwt(), newClaims, claims.ExpiresAt.Unix())
+
+	passport := &users.UserPassport{
+		User: profile,
+		Token: &users.UserToken{
+			Id: oauth.Id,
+			AccessToken: accessToken.SignToken(),
+			RefreshToken: refreshToken,
+		},
+	}
+
+	if err := u.usersRepository.UpdateOauth(passport.Token); err != nil {
+		return nil, err
+	}
+
+	return passport, nil
+	
 }

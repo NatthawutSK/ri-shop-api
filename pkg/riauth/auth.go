@@ -1,6 +1,7 @@
 package riAuth
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -39,6 +40,51 @@ func jwtTimeDuration(t int) *jwt.NumericDate {
 
 func jwtTimeRepeatAdapter(t int64) *jwt.NumericDate {
 	return jwt.NewNumericDate(time.Unix(t, 0))
+}
+
+func ParseToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error){
+	token, err := jwt.ParseWithClaims(tokenString, &riMapClaims{}, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("signing method is invalid")
+		}
+		return cfg.SecretKey(), nil
+	})
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenMalformed){
+			return nil, fmt.Errorf("token format is invalid")
+		} else if errors.Is(err, jwt.ErrTokenExpired){
+			return nil, fmt.Errorf("token is expired")
+		} else {
+			return nil, fmt.Errorf("parse token  failed : %v", err)
+		}
+	}
+
+	if claims, ok := token.Claims.(*riMapClaims); ok {
+		return claims, nil
+	} else {
+		return nil, fmt.Errorf("claims type is invalid")
+	}
+
+}
+
+
+func RepeatToken(cfg config.IJwtConfig, claims *users.UserClaims, exp int64) string{
+	obj := &riAuth{
+		cfg: cfg,
+		mapClaims: &riMapClaims{
+			Claims: claims,
+			RegisteredClaims: jwt.RegisteredClaims{
+				Issuer:    "rishop-api",
+				Subject:  "refresh-token",
+				Audience: []string{"customer", "admin"},
+				ExpiresAt: jwtTimeRepeatAdapter(exp),
+				NotBefore: jwt.NewNumericDate(time.Now()),
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+			},
+		},
+	}
+	return obj.SignToken()
+
 }
 
 
