@@ -28,6 +28,10 @@ type IRiAdmin interface {
 	SignToken() string
 }
 
+type IRiApikey interface {
+	SignToken() string
+}
+
 type riAuth struct {
 	mapClaims *riMapClaims
 	cfg       config.IJwtConfig
@@ -36,6 +40,11 @@ type riAuth struct {
 type riAdmin struct {
 	*riAuth	
 }
+
+type riApiKey struct {
+	*riAuth
+}
+
 
 type riMapClaims struct{
 	Claims *users.UserClaims `json:"claims"`
@@ -51,6 +60,12 @@ func (a *riAuth) SignToken() string {
 func (a *riAdmin) SignToken() string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, a.mapClaims)
 	ss, _ := token.SignedString(a.cfg.AdminKey())
+	return ss
+}
+
+func (a *riApiKey) SignToken() string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, a.mapClaims)
+	ss, _ := token.SignedString(a.cfg.ApiKey())
 	return ss
 }
 
@@ -114,6 +129,31 @@ func ParseAdminToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, e
 
 }
 
+func ParseApiKey(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error){
+	token, err := jwt.ParseWithClaims(tokenString, &riMapClaims{}, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("signing method is invalid")
+		}
+		return cfg.ApiKey(), nil
+	})
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenMalformed){
+			return nil, fmt.Errorf("token format is invalid")
+		} else if errors.Is(err, jwt.ErrTokenExpired){
+			return nil, fmt.Errorf("token is expired")
+		} else {
+			return nil, fmt.Errorf("parse token  failed : %v", err)
+		}
+	}
+
+	if claims, ok := token.Claims.(*riMapClaims); ok {
+		return claims, nil
+	} else {
+		return nil, fmt.Errorf("claims type is invalid")
+	}
+
+}
+
 
 func RepeatToken(cfg config.IJwtConfig, claims *users.UserClaims, exp int64) string{
 	obj := &riAuth{
@@ -143,6 +183,8 @@ func NewRiAuth(tokenType TokenType,cfg config.IJwtConfig, claims *users.UserClai
 		return newRefreshToken(cfg , claims), nil
 	case Admin:
 		return newAdminToken(cfg), nil
+	case ApiKey:
+		return newApiKey(cfg), nil
 	default:
 		return nil, fmt.Errorf("unknown token type")
 
@@ -197,6 +239,26 @@ func newAdminToken(cfg config.IJwtConfig) IRiAuth {
 					Subject:  "admin-token",
 					Audience: []string{"admin"},
 					ExpiresAt: jwtTimeDuration(300),
+					NotBefore: jwt.NewNumericDate(time.Now()),
+					IssuedAt:  jwt.NewNumericDate(time.Now()),
+				},
+			},
+		},
+
+	}
+}
+
+func newApiKey(cfg config.IJwtConfig) IRiAuth {
+	return &riApiKey{
+		&riAuth{
+			cfg: cfg,
+			mapClaims: &riMapClaims{
+				Claims: nil,
+				RegisteredClaims: jwt.RegisteredClaims{
+					Issuer:    "rishop-api",
+					Subject:  "api-key",
+					Audience: []string{"admin", "customer"},
+					ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(2,0,0)),
 					NotBefore: jwt.NewNumericDate(time.Now()),
 					IssuedAt:  jwt.NewNumericDate(time.Now()),
 				},
