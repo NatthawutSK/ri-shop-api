@@ -63,7 +63,7 @@ func (s *server) Start() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func(){
-		_ = <-c
+		<-c
 		log.Println("server is shutting down...")
 		_ = s.app.Shutdown()
 	}()
