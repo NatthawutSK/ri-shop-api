@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -15,6 +17,8 @@ import (
 type IFilesUsecase interface{
 	UploadToGCP(req []*files.FileReq) ([]*files.FileRes, error)
 	DeleteFileOnGCP(req []*files.DeleteFileReq) error
+	UploadToStorage(req []*files.FileReq) ([]*files.FileRes, error)
+	DeleteFileOnStorage(req []*files.DeleteFileReq) error
 }
 
 type filesUsecase struct {
@@ -27,13 +31,14 @@ func FilesUsecase(cfg config.IConfig) IFilesUsecase {
 	}
 }
 
-type filePub struct {
+type filesPub struct {
 	bucket string
 	destination string
 	file *files.FileRes
 }
 
-func (f *filePub) makePublic(ctx context.Context, client *storage.Client) error {
+
+func (f *filesPub) makePublic(ctx context.Context, client *storage.Client) error {
 	acl := client.Bucket(f.bucket).Object(f.destination).ACL()
 	if err := acl.Set(ctx, storage.AllUsers, storage.RoleReader); err != nil {
 			return fmt.Errorf("ACLHandle.Set: %w", err)
@@ -76,7 +81,7 @@ func (u *filesUsecase) uploadWorkers(ctx context.Context, client *storage.Client
 		}
 		fmt.Printf("%v uploaded to %v.\n", job.FileName, job.Destination)
 
-		newFile := &filePub{
+		newFile := &filesPub{
 			file: &files.FileRes{
 				FileName: job.FileName,
 				Url: fmt.Sprintf("https://storage.googleapis.com/%s/%s", u.cfg.App().GCPBucket(), job.Destination),
@@ -194,6 +199,124 @@ func (u *filesUsecase) DeleteFileOnGCP(req []*files.DeleteFileReq) error {
 		err := <-errsCh
 		if err != nil {
 			return fmt.Errorf("delete file failed: %v", err)
+		}
+	}
+	return nil
+}
+
+
+
+
+// upload to storage local
+
+func (u *filesUsecase) uploadToStorageWorker(ctx context.Context, jobs <-chan *files.FileReq, results chan<- *files.FileRes, errs chan<- error) {
+	for job := range jobs {
+		cotainer, err := job.File.Open()
+		if err != nil {
+			errs <- err
+			return
+		}
+		b, err := io.ReadAll(cotainer)
+		if err != nil {
+			errs <- err
+			return
+		}
+
+		// Upload an object to storage
+		dest := fmt.Sprintf("./assets/images/%s", job.Destination)
+		if err := os.WriteFile(dest, b, 0777); err != nil {
+			if err := os.MkdirAll("./assets/images/"+strings.Replace(job.Destination, job.FileName, "", 1), 0777); err != nil {
+				errs <- fmt.Errorf("mkdir \"./assets/images/%s\" failed: %v", err, job.Destination)
+				return
+			}
+			if err := os.WriteFile(dest, b, 0777); err != nil {
+				errs <- fmt.Errorf("write file failed: %v", err)
+				return
+			}
+		}
+
+		newFile := &filesPub{
+			file: &files.FileRes{
+				FileName: job.FileName,
+				Url:      fmt.Sprintf("http://%s:%d/%s", u.cfg.App().Host(), u.cfg.App().Port(), job.Destination),
+			},
+			destination: job.Destination,
+		}
+
+		errs <- nil
+		results <- newFile.file
+	}
+}
+
+
+func (u *filesUsecase) UploadToStorage(req []*files.FileReq) ([]*files.FileRes, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	defer cancel()
+
+	jobsCh := make(chan *files.FileReq, len(req))
+	resultsCh := make(chan *files.FileRes, len(req))
+	errsCh := make(chan error, len(req))
+
+	res := make([]*files.FileRes, 0)
+
+	for _, r := range req {
+		jobsCh <- r
+	}
+	close(jobsCh)
+
+	numWorkers := 5
+	for i := 0; i < numWorkers; i++ {
+		go u.uploadToStorageWorker(ctx, jobsCh, resultsCh, errsCh)
+	}
+
+	for a := 0; a < len(req); a++ {
+		err := <-errsCh
+		if err != nil {
+			return nil, err
+		}
+
+		result := <-resultsCh
+		res = append(res, result)
+	}
+	return res, nil
+}
+
+
+
+
+// delete file in storage local
+
+func (u *filesUsecase) deleteFromStorageFileWorkers(ctx context.Context, jobs <-chan *files.DeleteFileReq, errs chan<- error) {
+	for job := range jobs {
+		if err := os.Remove("./assets/images/" + job.Destination); err != nil {
+			errs <- fmt.Errorf("remove file: %s failed: %v", job.Destination, err)
+			return
+		}
+		errs <- nil
+	}
+}
+
+func (u *filesUsecase) DeleteFileOnStorage(req []*files.DeleteFileReq) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	defer cancel()
+
+	jobsCh := make(chan *files.DeleteFileReq, len(req))
+	errsCh := make(chan error, len(req))
+
+	for _, r := range req {
+		jobsCh <- r
+	}
+	close(jobsCh)
+
+	numWorkers := 5
+	for i := 0; i < numWorkers; i++ {
+		go u.deleteFromStorageFileWorkers(ctx, jobsCh, errsCh)
+	}
+
+	for range req {
+		err := <-errsCh
+		if err != nil {
+			return err
 		}
 	}
 	return nil
