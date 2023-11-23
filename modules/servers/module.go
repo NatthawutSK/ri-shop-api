@@ -4,6 +4,8 @@ import (
 	"github.com/NatthawutSK/ri-shop/modules/appinfo/appinfoHandlers"
 	"github.com/NatthawutSK/ri-shop/modules/appinfo/appinfoRepositories"
 	"github.com/NatthawutSK/ri-shop/modules/appinfo/appinfoUsecases"
+	"github.com/NatthawutSK/ri-shop/modules/files/filesHandlers"
+	"github.com/NatthawutSK/ri-shop/modules/files/filesUsecases"
 	"github.com/NatthawutSK/ri-shop/modules/middlewares/middlewaresHandlers"
 	"github.com/NatthawutSK/ri-shop/modules/middlewares/middlewaresRepositories"
 	"github.com/NatthawutSK/ri-shop/modules/middlewares/middlewaresUsecases"
@@ -18,6 +20,7 @@ type IModuleFactory interface{
 	MonitorModule()
 	UsersModule()
 	AppinfoModule()
+	FilesModule()
 }
 
 
@@ -77,4 +80,16 @@ func (m *moduleFactory) AppinfoModule() {
 	router.Get("/categories", m.mid.ApiKeyAuth(), handler.FindCategory)
 	router.Post("/categories",  m.mid.JwtAuth(), m.mid.Authorize(2), handler.InsertCategory)
 	router.Delete("/:categoryId/categories", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteCategory)
+}
+
+
+func (m *moduleFactory) FilesModule(){
+	usecase := filesUsecases.FilesUsecase(m.s.cfg)
+	handler := filesHandlers.FileHandler(m.s.cfg, usecase)
+
+	router := m.r.Group("/files")
+
+	router.Post("/upload", m.mid.JwtAuth(), m.mid.Authorize(2), handler.UploadFiles)
+	router.Patch("/delete", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteFile)
+
 }
