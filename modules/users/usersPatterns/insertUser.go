@@ -141,6 +141,8 @@ func (f *userReq) Result() (*users.UserPassport, error) {
 		WHERE "u"."id" = $1
 	) AS "t"`
 
+	//json_build_object คือ การสร้าง json จากข้อมูลได้
+
 	data := make([]byte, 0)
 	if err := f.db.Get(&data, query, f.id); err != nil {
 		return nil, fmt.Errorf("get user failed: %v", err)

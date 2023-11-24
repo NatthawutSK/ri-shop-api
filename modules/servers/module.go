@@ -10,6 +10,9 @@ import (
 	"github.com/NatthawutSK/ri-shop/modules/middlewares/middlewaresRepositories"
 	"github.com/NatthawutSK/ri-shop/modules/middlewares/middlewaresUsecases"
 	"github.com/NatthawutSK/ri-shop/modules/monitor/monitorHandlers"
+	"github.com/NatthawutSK/ri-shop/modules/products/productsHandlers"
+	"github.com/NatthawutSK/ri-shop/modules/products/productsRepositories"
+	"github.com/NatthawutSK/ri-shop/modules/products/productsUsecases"
 	"github.com/NatthawutSK/ri-shop/modules/users/usersHandlers"
 	"github.com/NatthawutSK/ri-shop/modules/users/usersRepositories"
 	"github.com/NatthawutSK/ri-shop/modules/users/usersUsecases"
@@ -21,6 +24,7 @@ type IModuleFactory interface{
 	UsersModule()
 	AppinfoModule()
 	FilesModule()
+	ProductsModule()
 }
 
 
@@ -91,5 +95,18 @@ func (m *moduleFactory) FilesModule(){
 
 	router.Post("/upload", m.mid.JwtAuth(), m.mid.Authorize(2), handler.UploadFiles)
 	router.Patch("/delete", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteFile)
+
+}
+
+func (m *moduleFactory) ProductsModule(){
+	fileUsecase := filesUsecases.FilesUsecase(m.s.cfg)
+	repository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, fileUsecase)
+	usecase := productsUsecases.ProductsUsecase(repository)
+	handler := productsHandlers.ProductsHandler(usecase, m.s.cfg, fileUsecase)
+
+	router := m.r.Group("/products")
+
+	router.Get("/:productId", m.mid.ApiKeyAuth(), handler.FindOneProduct)
+
 
 }
