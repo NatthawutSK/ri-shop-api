@@ -87,18 +87,7 @@ func (h *fileHandler) UploadFiles(c *fiber.Ctx) error {
 		})
 	}
 
-	res, err := h.fileUsecase.UploadToGCP(req)
-	if err != nil {
-		return entities.NewResponse(c).Error(
-			fiber.ErrInternalServerError.Code,
-			string(uploadFilesErr),
-			err.Error(),
-		).Res()
-	}
-
-	// If you want to upload files to your computer please use this function below instead
-
-	// res, err := h.fileUsecase.UploadToStorage(req)
+	// res, err := h.fileUsecase.UploadToGCP(req)
 	// if err != nil {
 	// 	return entities.NewResponse(c).Error(
 	// 		fiber.ErrInternalServerError.Code,
@@ -106,6 +95,17 @@ func (h *fileHandler) UploadFiles(c *fiber.Ctx) error {
 	// 		err.Error(),
 	// 	).Res()
 	// }
+
+	// If you want to upload files to your computer please use this function below instead
+
+	res, err := h.fileUsecase.UploadToStorage(req)
+	if err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrInternalServerError.Code,
+			string(uploadFilesErr),
+			err.Error(),
+		).Res()
+	}
 
 
 	return entities.NewResponse(c).Success(fiber.StatusCreated, res).Res()
@@ -122,23 +122,23 @@ func (h *fileHandler) DeleteFile(c *fiber.Ctx) error {
 		).Res()
 	}
 
-	if err := h.fileUsecase.DeleteFileOnGCP(req); err != nil {
-		return entities.NewResponse(c).Error(
-			fiber.ErrInternalServerError.Code,
-			string(deleteFileErr),
-			err.Error(),
-		).Res()
-	}
-
-	// If you want to delete files in your computer please use this function below instead
-
-	// if err := h.fileUsecase.DeleteFileOnStorage(req); err != nil {
+	// if err := h.fileUsecase.DeleteFileOnGCP(req); err != nil {
 	// 	return entities.NewResponse(c).Error(
 	// 		fiber.ErrInternalServerError.Code,
 	// 		string(deleteFileErr),
 	// 		err.Error(),
 	// 	).Res()
 	// }
+
+	// If you want to delete files in your computer please use this function below instead
+
+	if err := h.fileUsecase.DeleteFileOnStorage(req); err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrInternalServerError.Code,
+			string(deleteFileErr),
+			err.Error(),
+		).Res()
+	}
 
 	return entities.NewResponse(c).Success(fiber.StatusOK, nil).Res()
 }

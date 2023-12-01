@@ -73,6 +73,8 @@ func (h *appinfoHandler) FindCategory(c *fiber.Ctx) error {
 	req := new(appinfo.CategoryFilter)
 	//if only one parameter
 	//use c.Query("title")
+	
+	//if multiple parameters
 	if err := c.QueryParser(req); err != nil {
 		return entities.NewResponse(c).Error(
 			fiber.ErrBadRequest.Code,

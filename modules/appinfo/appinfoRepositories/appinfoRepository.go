@@ -43,12 +43,15 @@ func (r *appinfoRepository) FindCategory(req *appinfo.CategoryFilter) ([]*appinf
 	query += ";"
 
 	category := make([]*appinfo.Category, 0)
+
 	if err := r.db.Select(&category, query, filterValues...); err != nil {
 		return nil, fmt.Errorf("select categories failed: %v", err)
 	}
 	return category, nil
 }
 
+
+// InsertCategory insert multiple rows
 func (r *appinfoRepository) InsertCategory(req []*appinfo.Category)  error {
 	ctx := context.Background()
 
@@ -58,15 +61,20 @@ func (r *appinfoRepository) InsertCategory(req []*appinfo.Category)  error {
 		"title"
 	) VALUES `
 
+
+	// start transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin transaction failed: %v", err)
 	}
 
 	valuesStack := make([]any, 0)
+
+	// loop for insert multiple rows
 	for i,cat := range req {
 		valuesStack = append(valuesStack, cat.Title)
 
+		// if last loop no need to add comma
 		if i == len(req)-1 {
 			query += fmt.Sprintf("($%d)", i+1)
 		} else {
@@ -80,14 +88,18 @@ func (r *appinfoRepository) InsertCategory(req []*appinfo.Category)  error {
 	`
 
 
+	// execute query
 	rows, err := tx.QueryxContext(ctx, query, valuesStack...)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("insert categories failed: %v", err)
 	}
 
+
 	var i int
+	// loop for get inserted id
 	for rows.Next() {
+		// receive inserted id and assign to req struct
 		if err := rows.Scan(&req[i].Id); err != nil {
 			tx.Rollback()
 			return fmt.Errorf("scan categories id failed: %v", err)

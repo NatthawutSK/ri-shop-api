@@ -15,3 +15,11 @@ type Products struct {
 	Price 	 float64 `json:"price"`
 	Images []*entities.Image `json:"images"`
 }
+
+
+type ProductFilter struct {
+	Id      string `json:"id" query:"id"`
+	Search 	string `json:"search" query:"search"` // search by title and description
+	*entities.PaginationReq
+	*entities.SortReq
+}

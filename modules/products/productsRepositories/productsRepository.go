@@ -8,11 +8,13 @@ import (
 	"github.com/NatthawutSK/ri-shop/modules/entities"
 	"github.com/NatthawutSK/ri-shop/modules/files/filesUsecases"
 	"github.com/NatthawutSK/ri-shop/modules/products"
+	"github.com/NatthawutSK/ri-shop/modules/products/productsPatterns"
 	"github.com/jmoiron/sqlx"
 )
 
 type IProductsRepository interface{
 	FindOneProduct(productId string) (*products.Products, error)
+	FindProduct(req *products.ProductFilter) ([]*products.Products, int)
 }
 
 type productsRepository struct {
@@ -93,4 +95,17 @@ func (r *productsRepository) FindOneProduct(productId string) (*products.Product
 
 	return product, nil  
 
+}
+
+
+func (r *productsRepository) FindProduct(req *products.ProductFilter) ([]*products.Products, int) {
+	builder := productsPatterns.FindProductBuilder(r.db, req)
+	engineer := productsPatterns.FindProductEngineer(builder)
+
+	result := engineer.FindProduct().Result()
+	count := engineer.CountProduct().Count()
+
+	engineer.FindProduct().PrintQuery()
+
+	return result, count
 }
