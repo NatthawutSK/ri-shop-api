@@ -106,6 +106,7 @@ func (m *moduleFactory) ProductsModule(){
 
 	router := m.r.Group("/products")
 
+	router.Post("/", m.mid.JwtAuth(), m.mid.Authorize(2), handler.AddProduct)
 	router.Get("/", m.mid.ApiKeyAuth(), handler.FindProduct)
 	router.Get("/:productId", m.mid.ApiKeyAuth(), handler.FindOneProduct)
 
