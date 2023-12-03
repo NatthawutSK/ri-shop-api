@@ -19,12 +19,14 @@ const (
 	findOneProductErr productsHandlerErrCode = "products-001"
 	findProductErr productsHandlerErrCode = "products-002"
 	insertProductErr productsHandlerErrCode = "products-003"
+	updateProductErr productsHandlerErrCode = "products-004"
 )
 
 type IProductsHandler interface{
 	FindOneProduct(c *fiber.Ctx) error
 	FindProduct(c *fiber.Ctx) error
 	AddProduct(c *fiber.Ctx) error
+	UpdateProduct(c *fiber.Ctx) error
 }
 
 type productsHandler struct {
@@ -123,4 +125,36 @@ func (h *productsHandler) AddProduct(c *fiber.Ctx) error {
 
 	return entities.NewResponse(c).Success(fiber.StatusCreated, product).Res()
 	
+}
+
+
+func (h *productsHandler) UpdateProduct(c *fiber.Ctx) error {
+
+	productId := strings.Trim(c.Params("product_id"), " ")
+	req := &products.Products{
+		Id: productId,
+		Category: &appinfo.Category{},
+		Images: make([]*entities.Image, 0),
+	}
+
+	if err := c.BodyParser(req); err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrBadRequest.Code,
+			string(updateProductErr),
+			err.Error(),
+		).Res()
+	}
+
+	product, err := h.productsUsecase.UpdateProduct(req)
+	if err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrInternalServerError.Code,
+			string(updateProductErr),
+			err.Error(),
+		).Res()
+	}
+
+
+
+	return entities.NewResponse(c).Success(fiber.StatusOK, product).Res()
 }

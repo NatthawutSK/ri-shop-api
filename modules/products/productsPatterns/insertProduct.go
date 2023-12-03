@@ -43,8 +43,6 @@ func (b *insertProductBuilder) initTransaction() error {
 
 
 	return nil
-
-
 }
 
 func (b *insertProductBuilder) getProductId() string {
