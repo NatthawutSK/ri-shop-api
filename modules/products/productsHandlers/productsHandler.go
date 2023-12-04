@@ -1,11 +1,14 @@
 package productsHandlers
 
 import (
+	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/NatthawutSK/ri-shop/config"
 	"github.com/NatthawutSK/ri-shop/modules/appinfo"
 	"github.com/NatthawutSK/ri-shop/modules/entities"
+	"github.com/NatthawutSK/ri-shop/modules/files"
 	"github.com/NatthawutSK/ri-shop/modules/files/filesUsecases"
 	"github.com/NatthawutSK/ri-shop/modules/products"
 	"github.com/NatthawutSK/ri-shop/modules/products/productsUsecases"
@@ -20,6 +23,7 @@ const (
 	findProductErr productsHandlerErrCode = "products-002"
 	insertProductErr productsHandlerErrCode = "products-003"
 	updateProductErr productsHandlerErrCode = "products-004"
+	deleteProductErr productsHandlerErrCode = "products-005"
 )
 
 type IProductsHandler interface{
@@ -27,6 +31,7 @@ type IProductsHandler interface{
 	FindProduct(c *fiber.Ctx) error
 	AddProduct(c *fiber.Ctx) error
 	UpdateProduct(c *fiber.Ctx) error
+	DeleteProduct(c *fiber.Ctx) error
 }
 
 type productsHandler struct {
@@ -130,7 +135,7 @@ func (h *productsHandler) AddProduct(c *fiber.Ctx) error {
 
 func (h *productsHandler) UpdateProduct(c *fiber.Ctx) error {
 
-	productId := strings.Trim(c.Params("product_id"), " ")
+	productId := strings.Trim(c.Params("productId"), " ")
 	req := &products.Products{
 		Id: productId,
 		Category: &appinfo.Category{},
@@ -157,4 +162,54 @@ func (h *productsHandler) UpdateProduct(c *fiber.Ctx) error {
 
 
 	return entities.NewResponse(c).Success(fiber.StatusOK, product).Res()
+}
+
+
+func (h *productsHandler) DeleteProduct(c *fiber.Ctx) error {
+	productId := strings.Trim(c.Params("productId"), " ")
+	
+	product, err := h.productsUsecase.FindOneProduct(productId)
+	if err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrInternalServerError.Code,
+			string(deleteProductErr),
+			err.Error(),
+		).Res()
+	}
+
+	deleteFileReq := make([]*files.DeleteFileReq, 0)
+	for _, image := range product.Images {
+		parsedURL, err := url.Parse(image.Url)
+		if err != nil {
+			fmt.Println("Error parsing URL:", err)
+		}	
+
+		// Get the path from the parsed URL
+		path := parsedURL.Path
+
+		// Remove the leading '/' character from the path
+		path = strings.TrimPrefix(path, fmt.Sprintf("/%s/", h.cfg.App().GCPBucket()))
+		deleteFileReq = append(deleteFileReq, &files.DeleteFileReq{
+			Destination: fmt.Sprint(path),
+		})
+	}
+	if err := h.fileUsecase.DeleteFileOnGCP(deleteFileReq); err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrInternalServerError.Code,
+			string(deleteProductErr),
+			err.Error(),
+		).Res()
+	}
+
+	if err := h.productsUsecase.DeleteProduct(productId); err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrInternalServerError.Code,
+			string(deleteProductErr),
+			err.Error(),
+		).Res()
+	}
+
+
+	return entities.NewResponse(c).Success(fiber.StatusNoContent, nil).Res()
+
 }

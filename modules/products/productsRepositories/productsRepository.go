@@ -1,8 +1,10 @@
 package productsRepositories
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/NatthawutSK/ri-shop/config"
 	"github.com/NatthawutSK/ri-shop/modules/entities"
@@ -17,6 +19,7 @@ type IProductsRepository interface{
 	FindProduct(req *products.ProductFilter) ([]*products.Products, int)
 	InsertProduct(req *products.Products) (*products.Products, error)
 	UpdateProduct(req *products.Products) (*products.Products, error)
+	DeleteProduct(productId string) error
 }
 
 type productsRepository struct {
@@ -144,3 +147,16 @@ func (r *productsRepository) UpdateProduct(req *products.Products) (*products.Pr
 	return product, nil
 
 }
+
+func (r *productsRepository) DeleteProduct(productId string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 15) // Timeout of 15 seconds
+	defer cancel()
+	query := `DELETE FROM "products" WHERE "id" = $1;`
+
+	if _, err := r.db.ExecContext(ctx, query, productId); err != nil {
+    	return fmt.Errorf("delete product failed: %v", err)
+	}
+
+	return nil
+}
+

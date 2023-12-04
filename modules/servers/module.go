@@ -107,9 +107,10 @@ func (m *moduleFactory) ProductsModule(){
 	router := m.r.Group("/products")
 
 	router.Post("/", m.mid.JwtAuth(), m.mid.Authorize(2), handler.AddProduct)
-	router.Patch("/:product_id", m.mid.JwtAuth(), m.mid.Authorize(2), handler.UpdateProduct)
+	router.Patch("/:productId", m.mid.JwtAuth(), m.mid.Authorize(2), handler.UpdateProduct)
 	router.Get("/", m.mid.ApiKeyAuth(), handler.FindProduct)
 	router.Get("/:productId", m.mid.ApiKeyAuth(), handler.FindOneProduct)
+	router.Delete("/:productId", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteProduct)
 
 
 }
