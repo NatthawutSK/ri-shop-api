@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/NatthawutSK/ri-shop/modules/orders"
+	"github.com/NatthawutSK/ri-shop/modules/orders/ordersPattern"
 	"github.com/jmoiron/sqlx"
 )
 
 type IOrdersRepository interface{
 	FindOneOrder(orderId string) (*orders.Order, error)
+	FindOrder(req *orders.OrderFilter) ([]*orders.Order, int)
 }
 
 type ordersRepository struct {
@@ -77,4 +79,11 @@ func (r *ordersRepository) FindOneOrder(orderId string) (*orders.Order, error) {
 	}
 	
 	return order, nil
+}
+
+func (r *ordersRepository) FindOrder(req *orders.OrderFilter) ([]*orders.Order, int){
+	builder := ordersPattern.FindOrderBuilder(r.db, req)
+	engineer := ordersPattern.FindOrderEngineer(builder)
+
+	return engineer.FindOrder(), engineer.CountOrder()
 }

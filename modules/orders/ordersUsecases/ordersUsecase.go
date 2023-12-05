@@ -1,6 +1,9 @@
 package ordersUsecases
 
 import (
+	"math"
+
+	"github.com/NatthawutSK/ri-shop/modules/entities"
 	"github.com/NatthawutSK/ri-shop/modules/orders"
 	"github.com/NatthawutSK/ri-shop/modules/orders/ordersRepositories"
 	"github.com/NatthawutSK/ri-shop/modules/products/productsRepositories"
@@ -8,6 +11,7 @@ import (
 
 type IOrdersUsecase interface{
 	FindOneOrder(orderId string) (*orders.Order, error) 
+	FindOrder(req *orders.OrderFilter) *entities.PaginateRes
 }
 
 type ordersUsecase struct {
@@ -29,4 +33,16 @@ func (u *ordersUsecase) FindOneOrder(orderId string) (*orders.Order, error) {
 	}
 	
 	return order, nil
+}
+
+func (u *ordersUsecase) FindOrder(req *orders.OrderFilter) *entities.PaginateRes {
+	orders, count := u.ordersRepository.FindOrder(req)
+
+	return &entities.PaginateRes{
+		Data: orders,
+		Page: req.Page,
+		Limit: req.Limit,
+		TotalPage: int(math.Ceil(float64(count)/float64(req.Limit))),
+		TotalItem: count,
+	}
 }

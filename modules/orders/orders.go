@@ -1,6 +1,9 @@
 package orders
 
-import "github.com/NatthawutSK/ri-shop/modules/products"
+import (
+	"github.com/NatthawutSK/ri-shop/modules/entities"
+	"github.com/NatthawutSK/ri-shop/modules/products"
+)
 
 type Order struct {
 	Id           string           `json:"id" db:"id"`
@@ -26,4 +29,14 @@ type ProductsOrder struct {
 	Id      string `json:"id" db:"id"`
 	Qty     int    `json:"qty" db:"qty"`
 	Product *products.Products `json:"product" db:"product"`
+}
+
+
+type OrderFilter struct {
+	Search    string `query:"search"` // user_id, address, contact
+	Status    string `query:"status"`
+	StartDate string `query:"start_date"`
+	EndDate   string `query:"end_date"`
+	*entities.PaginationReq
+	*entities.SortReq
 }
