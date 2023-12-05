@@ -10,6 +10,9 @@ import (
 	"github.com/NatthawutSK/ri-shop/modules/middlewares/middlewaresRepositories"
 	"github.com/NatthawutSK/ri-shop/modules/middlewares/middlewaresUsecases"
 	"github.com/NatthawutSK/ri-shop/modules/monitor/monitorHandlers"
+	"github.com/NatthawutSK/ri-shop/modules/orders/ordersHandlers"
+	"github.com/NatthawutSK/ri-shop/modules/orders/ordersRepositories"
+	"github.com/NatthawutSK/ri-shop/modules/orders/ordersUsecases"
 	"github.com/NatthawutSK/ri-shop/modules/products/productsHandlers"
 	"github.com/NatthawutSK/ri-shop/modules/products/productsRepositories"
 	"github.com/NatthawutSK/ri-shop/modules/products/productsUsecases"
@@ -25,6 +28,7 @@ type IModuleFactory interface{
 	AppinfoModule()
 	FilesModule()
 	ProductsModule()
+	OrdersModule()
 }
 
 
@@ -113,4 +117,18 @@ func (m *moduleFactory) ProductsModule(){
 	router.Delete("/:productId", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteProduct)
 
 
+}
+
+func (m *moduleFactory) OrdersModule(){
+	fileUsecase := filesUsecases.FilesUsecase(m.s.cfg)
+	productRepository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, fileUsecase)
+
+	ordersRepository := ordersRepositories.OrdersRepository(m.s.db)
+	ordersUsecase := ordersUsecases.OrdersUsecase(ordersRepository, productRepository)
+	ordersHandler := ordersHandlers.OrdersHandler(ordersUsecase, m.s.cfg)
+
+	router := m.r.Group("/orders")
+
+	router.Get("/:user_id/:order_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), ordersHandler.FindOneOrder)
+	
 }

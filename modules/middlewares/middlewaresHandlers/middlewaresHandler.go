@@ -120,6 +120,7 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 	}
 }
 
+// ป้องกันการเข้าถึงข้อมูลของคนอื่น ต้องมาคู่กับ JwtAuth
 func (h *middlewaresHandler) ParamsCheck() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userId := c.Locals("userId")
