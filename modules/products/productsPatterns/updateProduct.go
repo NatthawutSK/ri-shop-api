@@ -3,7 +3,10 @@ package productsPatterns
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 
+	"github.com/NatthawutSK/ri-shop/config"
 	"github.com/NatthawutSK/ri-shop/modules/entities"
 	"github.com/NatthawutSK/ri-shop/modules/files"
 	"github.com/NatthawutSK/ri-shop/modules/files/filesUsecases"
@@ -40,9 +43,10 @@ type updateProductBuilder struct{
 	queryFields    []string
 	lastStackIndex int
 	values         []any
+	cfg 		   config.IConfig
 }
 
-func UpdateProductBuilder(db *sqlx.DB, req *products.Products, fileUsecase filesUsecases.IFilesUsecase) IUpdateProductBuilder {
+func UpdateProductBuilder(db *sqlx.DB, req *products.Products, fileUsecase filesUsecases.IFilesUsecase, cfg config.IConfig) IUpdateProductBuilder {
 	return &updateProductBuilder{
 		db:             db,
 		req:            req,
@@ -50,6 +54,7 @@ func UpdateProductBuilder(db *sqlx.DB, req *products.Products, fileUsecase files
 		queryFields:    make([]string, 0),
 		values:         make([]any, 0),
 		lastStackIndex: 0,
+		cfg: cfg,
 	}
 }
 
@@ -200,14 +205,27 @@ func (b *updateProductBuilder) deleteOldImages() error {
 	WHERE "product_id" = $1;`
 
 	images := b.getOldImages()
-	if len(images) == 0 {
+	if len(images) > 0 {
 		deleteFileReq := make([]*files.DeleteFileReq, 0)
 		for _,img := range images {
+			parsedURL, err := url.Parse(img.Url)
+			if err != nil {
+				fmt.Println("Error parsing URL:", err)
+			}	
+
+			// Get the path from the parsed URL
+			path := parsedURL.Path
+
+			// Remove the leading '/' character from the path
+			path = strings.TrimPrefix(path, fmt.Sprintf("/%s/", b.cfg.App().GCPBucket()))
 			deleteFileReq = append(deleteFileReq, &files.DeleteFileReq{
-				Destination: fmt.Sprintf("images/products/%s", img.FileName),
+				Destination: fmt.Sprint(path),
 			})
 		}
-		b.filesUsecases.DeleteFileOnGCP(deleteFileReq)
+		 
+		if err := b.filesUsecases.DeleteFileOnGCP(deleteFileReq) ; err != nil {
+			return fmt.Errorf("delete old images failed: %v", err)
+		}
 			
 	}
 
@@ -282,6 +300,7 @@ func (en *updateProductEngineer) UpdateProduct() error {
 		return fmt.Errorf("update product failed: %v", err)
 	}
 
+	fmt.Print("len image", en.builder.getImagesLen())
 	if en.builder.getImagesLen() > 0 {
 		// delete old images
 		if err := en.builder.deleteOldImages(); err != nil {

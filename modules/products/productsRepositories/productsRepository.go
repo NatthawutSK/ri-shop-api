@@ -133,7 +133,7 @@ func (r *productsRepository) InsertProduct(req *products.Products) (*products.Pr
 }
 
 func (r *productsRepository) UpdateProduct(req *products.Products) (*products.Products, error) {
-	builder := productsPatterns.UpdateProductBuilder(r.db, req, r.fileUsecase)
+	builder := productsPatterns.UpdateProductBuilder(r.db, req, r.fileUsecase, r.cfg)
 	engineer := productsPatterns.UpdateProductEngineer(builder)
 	
 	if err := engineer.UpdateProduct(); err != nil {

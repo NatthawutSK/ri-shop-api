@@ -137,10 +137,11 @@ func (h *productsHandler) UpdateProduct(c *fiber.Ctx) error {
 
 	productId := strings.Trim(c.Params("productId"), " ")
 	req := &products.Products{
-		Id: productId,
 		Category: &appinfo.Category{},
 		Images: make([]*entities.Image, 0),
 	}
+
+	req.Id = productId
 
 	if err := c.BodyParser(req); err != nil {
 		return entities.NewResponse(c).Error(
