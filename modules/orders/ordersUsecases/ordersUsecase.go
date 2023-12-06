@@ -1,6 +1,7 @@
 package ordersUsecases
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/NatthawutSK/ri-shop/modules/entities"
@@ -12,6 +13,7 @@ import (
 type IOrdersUsecase interface{
 	FindOneOrder(orderId string) (*orders.Order, error) 
 	FindOrder(req *orders.OrderFilter) *entities.PaginateRes
+	InsertOrder(req *orders.Order) (*orders.Order, error)
 }
 
 type ordersUsecase struct {
@@ -45,4 +47,35 @@ func (u *ordersUsecase) FindOrder(req *orders.OrderFilter) *entities.PaginateRes
 		TotalPage: int(math.Ceil(float64(count)/float64(req.Limit))),
 		TotalItem: count,
 	}
+}
+
+func (u *ordersUsecase) InsertOrder(req *orders.Order) (*orders.Order, error) {
+	// Check product is exist and correct price
+	for i := range req.Products {
+		if req.Products[i].Product == nil {
+			return nil, fmt.Errorf("product is required")
+		
+		}
+
+		prod, err := u.productsRepository.FindOneProduct(req.Products[i].Product.Id)
+		if err != nil {
+			return nil, fmt.Errorf("find one product failed : %v", err)
+		}
+
+		// set price from product
+		req.TotalPaid += req.Products[i].Product.Price * float64(req.Products[i].Qty)
+		req.Products[i].Product = prod
+	}
+
+	orderId, err := u.ordersRepository.InsertOrder(req)
+	if err != nil {
+		return nil, err
+	}
+
+	order, err := u.ordersRepository.FindOneOrder(orderId)
+	if err != nil {
+		return nil, err
+	}
+
+	return order, nil
 }
