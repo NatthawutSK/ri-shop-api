@@ -10,12 +10,12 @@ type Order struct {
 	UserId       string           `json:"user_id" db:"user_id"`
 	TransferSlip *TransferSlip    `json:"transfer_slip" db:"transfer_slip"`
 	Products     []*ProductsOrder `json:"products"`
-	Address 	string           `json:"address" db:"address"`
-	Contact 	string           `json:"contact" db:"contact"`
-	Status 		string           `json:"status" db:"status"`
-	TotalPaid 	float64          `json:"total_paid" db:"total_paid"`
+	Address      string           `json:"address" db:"address"`
+	Contact      string           `json:"contact" db:"contact"`
+	Status       string           `json:"status" db:"status"`
+	TotalPaid    float64          `json:"total_paid" db:"total_paid"`
 	CreatedAt    string           `json:"created_at" db:"created_at"`
-	UpdatedAt   string           `json:"updated_at" db:"updated_at"`
+	UpdatedAt    string           `json:"updated_at" db:"updated_at"`
 }
 
 type TransferSlip struct {
@@ -26,11 +26,10 @@ type TransferSlip struct {
 }
 
 type ProductsOrder struct {
-	Id      string `json:"id" db:"id"`
-	Qty     int    `json:"qty" db:"qty"`
+	Id      string             `json:"id" db:"id"`
+	Qty     int                `json:"qty" db:"qty"`
 	Product *products.Products `json:"product" db:"product"`
 }
-
 
 type OrderFilter struct {
 	Search    string `query:"search"` // user_id, address, contact
@@ -39,4 +38,10 @@ type OrderFilter struct {
 	EndDate   string `query:"end_date"`
 	*entities.PaginationReq
 	*entities.SortReq
+}
+
+type OrderUpdate struct {
+	Id           string        `json:"id" db:"id"`
+	TransferSlip *TransferSlip `json:"transfer_slip" db:"transfer_slip"`
+	Status       string        `json:"status" db:"status"`
 }

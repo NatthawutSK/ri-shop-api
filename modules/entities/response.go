@@ -24,7 +24,6 @@ type ErrorResponse struct {
 	Msg     string `json:"message"`
 }
 
-
 func NewResponse(c *fiber.Ctx) IResponse {
 	return &Response{
 		Context: c,
@@ -43,7 +42,6 @@ func (r *Response) Error(code int, traceId string, msg string) IResponse {
 	return r
 }
 
-
 // Success implements IResponse.
 func (r *Response) Success(code int, data any) IResponse {
 	r.StatusCode = code
@@ -51,7 +49,6 @@ func (r *Response) Success(code int, data any) IResponse {
 	rilogger.InitRiLogger(r.Context, &r.Data).Print().Save()
 	return r
 }
-
 
 // Res implements IResponse.
 func (r *Response) Res() error {
@@ -64,12 +61,10 @@ func (r *Response) Res() error {
 	}())
 }
 
-
-
 type PaginateRes struct {
-	Data any `json:"data"`
-	Page int `json:"page"`
-	Limit int `json:"limit"`
+	Data      any `json:"data"`
+	Page      int `json:"page"`
+	Limit     int `json:"limit"`
 	TotalPage int `json:"total_page"`
 	TotalItem int `json:"total_item"`
 }

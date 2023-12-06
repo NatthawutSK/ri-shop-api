@@ -15,18 +15,15 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-
 type middlewareHandlersErrCode string
 
 const (
 	routerCheckErr middlewareHandlersErrCode = "middleware-001"
-	jwtAuthErr middlewareHandlersErrCode = "middleware-002"
+	jwtAuthErr     middlewareHandlersErrCode = "middleware-002"
 	paramsCheckErr middlewareHandlersErrCode = "middleware-003"
-	authorizeErr middlewareHandlersErrCode = "middleware-004"
-	apiKeyErr middlewareHandlersErrCode = "middleware-005"
-	
+	authorizeErr   middlewareHandlersErrCode = "middleware-004"
+	apiKeyErr      middlewareHandlersErrCode = "middleware-005"
 )
-
 
 type IMiddlewaresHandler interface {
 	Cors() fiber.Handler
@@ -57,19 +54,17 @@ func (h *middlewaresHandler) StreamingFile() fiber.Handler {
 	})
 }
 
-
 func (h *middlewaresHandler) Cors() fiber.Handler {
 	return cors.New(cors.Config{
-		Next: cors.ConfigDefault.Next,
-		AllowOrigins: "*",
-		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
-		AllowHeaders: "",
+		Next:             cors.ConfigDefault.Next,
+		AllowOrigins:     "*",
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
+		AllowHeaders:     "",
 		AllowCredentials: false,
-		ExposeHeaders: "",
-		MaxAge: 0,
+		ExposeHeaders:    "",
+		MaxAge:           0,
 	})
 }
-
 
 func (h *middlewaresHandler) RouterCheck() fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -77,20 +72,17 @@ func (h *middlewaresHandler) RouterCheck() fiber.Handler {
 			fiber.ErrNotFound.Code,
 			string(routerCheckErr),
 			"router not found",
-
 		).Res()
 	}
 }
 
 func (h *middlewaresHandler) Logger() fiber.Handler {
 	return logger.New(logger.Config{
-		Format: "${time} [${ip}] ${status} - ${method} ${path}\n",
+		Format:     "${time} [${ip}] ${status} - ${method} ${path}\n",
 		TimeFormat: "02/01/2006",
-		TimeZone: "Bangkok/Asia",
-
+		TimeZone:   "Bangkok/Asia",
 	})
 }
-
 
 func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -103,7 +95,7 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 				err.Error(),
 			).Res()
 		}
-		
+
 		claims := result.Claims
 		if !h.middlewaresUsecase.FindAccessToken(claims.Id, token) {
 			return entities.NewResponse(c).Error(
@@ -124,6 +116,9 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 func (h *middlewaresHandler) ParamsCheck() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userId := c.Locals("userId")
+		if c.Locals("userRoleId").(int) == 2 {
+			return c.Next()
+		}
 		if c.Params("user_id") != userId {
 			return entities.NewResponse(c).Error(
 				fiber.ErrUnauthorized.Code,
@@ -135,7 +130,6 @@ func (h *middlewaresHandler) ParamsCheck() fiber.Handler {
 	}
 
 }
-
 
 func (h *middlewaresHandler) Authorize(expectRoleId ...int) fiber.Handler {
 	return func(c *fiber.Ctx) error {
@@ -175,7 +169,6 @@ func (h *middlewaresHandler) Authorize(expectRoleId ...int) fiber.Handler {
 		// userRoleId =          0 1
 		// expectedValueBinary = 1 0
 
-
 		for i := range userValueBinary {
 			if userValueBinary[i] == 1 && expectedValueBinary[i] == 1 {
 				return c.Next()
@@ -189,7 +182,6 @@ func (h *middlewaresHandler) Authorize(expectRoleId ...int) fiber.Handler {
 		).Res()
 	}
 }
-
 
 func (h *middlewaresHandler) ApiKeyAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {

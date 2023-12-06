@@ -22,7 +22,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type IModuleFactory interface{
+type IModuleFactory interface {
 	MonitorModule()
 	UsersModule()
 	AppinfoModule()
@@ -31,27 +31,25 @@ type IModuleFactory interface{
 	OrdersModule()
 }
 
-
 type moduleFactory struct {
-	r fiber.Router
-	s *server
+	r   fiber.Router
+	s   *server
 	mid middlewaresHandlers.IMiddlewaresHandler
 }
 
 func InitModule(r fiber.Router, s *server, mid middlewaresHandlers.IMiddlewaresHandler) IModuleFactory {
 	return &moduleFactory{
-		r: r,
-		s: s,
+		r:   r,
+		s:   s,
 		mid: mid,
 	}
 }
 
-func InitMiddlewares(s *server) middlewaresHandlers.IMiddlewaresHandler{
+func InitMiddlewares(s *server) middlewaresHandlers.IMiddlewaresHandler {
 	repository := middlewaresRepositories.MiddlewaresRepository(s.db)
 	usecase := middlewaresUsecases.MiddlewaresUsecase(repository)
 	return middlewaresHandlers.MiddlewaresHandler(s.cfg, usecase)
 }
-
 
 func (m *moduleFactory) MonitorModule() {
 	handle := monitorHandlers.MonitorHandler(m.s.cfg)
@@ -59,14 +57,13 @@ func (m *moduleFactory) MonitorModule() {
 	m.r.Get("/", handle.HealthCheck)
 }
 
-
 func (m *moduleFactory) UsersModule() {
 	repository := usersRepositories.UsersRepositoryHandler(m.s.db)
 	usecase := usersUsecases.UserUsecaseHandler(repository, m.s.cfg)
 	handler := usersHandlers.UsersHandler(m.s.cfg, usecase)
 
 	router := m.r.Group("/users")
-	
+
 	router.Post("/signup", m.mid.ApiKeyAuth(), handler.SignUpCustomer)
 	router.Post("/signin", m.mid.ApiKeyAuth(), handler.SignIn)
 	router.Post("/refresh", m.mid.ApiKeyAuth(), handler.RefreshPassport)
@@ -75,7 +72,6 @@ func (m *moduleFactory) UsersModule() {
 	router.Get("/admin/secret", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateAdminToken)
 	router.Get("/:user_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), handler.GetUserProfile)
 }
-
 
 func (m *moduleFactory) AppinfoModule() {
 	repository := appinfoRepositories.AppinfoRepository(m.s.db)
@@ -86,12 +82,11 @@ func (m *moduleFactory) AppinfoModule() {
 
 	router.Get("/apikey", m.mid.JwtAuth(), m.mid.Authorize(2), handler.GenerateApiKey)
 	router.Get("/categories", m.mid.ApiKeyAuth(), handler.FindCategory)
-	router.Post("/categories",  m.mid.JwtAuth(), m.mid.Authorize(2), handler.InsertCategory)
+	router.Post("/categories", m.mid.JwtAuth(), m.mid.Authorize(2), handler.InsertCategory)
 	router.Delete("/:categoryId/categories", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteCategory)
 }
 
-
-func (m *moduleFactory) FilesModule(){
+func (m *moduleFactory) FilesModule() {
 	usecase := filesUsecases.FilesUsecase(m.s.cfg)
 	handler := filesHandlers.FileHandler(m.s.cfg, usecase)
 
@@ -102,7 +97,7 @@ func (m *moduleFactory) FilesModule(){
 
 }
 
-func (m *moduleFactory) ProductsModule(){
+func (m *moduleFactory) ProductsModule() {
 	fileUsecase := filesUsecases.FilesUsecase(m.s.cfg)
 	repository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, fileUsecase)
 	usecase := productsUsecases.ProductsUsecase(repository)
@@ -116,10 +111,9 @@ func (m *moduleFactory) ProductsModule(){
 	router.Get("/:productId", m.mid.ApiKeyAuth(), handler.FindOneProduct)
 	router.Delete("/:productId", m.mid.JwtAuth(), m.mid.Authorize(2), handler.DeleteProduct)
 
-
 }
 
-func (m *moduleFactory) OrdersModule(){
+func (m *moduleFactory) OrdersModule() {
 	fileUsecase := filesUsecases.FilesUsecase(m.s.cfg)
 	productRepository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, fileUsecase)
 
@@ -132,5 +126,8 @@ func (m *moduleFactory) OrdersModule(){
 	router.Post("/", m.mid.JwtAuth(), ordersHandler.InsertOrder)
 	router.Get("/", m.mid.JwtAuth(), m.mid.Authorize(2), ordersHandler.FindOrder)
 	router.Get("/:user_id/:order_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), ordersHandler.FindOneOrder)
-	
+
+	//admin แก้ได้ทั้งหมด แต่ customer แก้ได้แค่ status เป็น cancel
+	router.Patch("/:user_id/:order_id", m.mid.JwtAuth(), m.mid.ParamsCheck(), ordersHandler.UpdateOrder)
+
 }

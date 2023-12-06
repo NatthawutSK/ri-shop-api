@@ -1,18 +1,21 @@
 package ordersRepositories
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/NatthawutSK/ri-shop/modules/orders"
 	"github.com/NatthawutSK/ri-shop/modules/orders/ordersPattern"
 	"github.com/jmoiron/sqlx"
 )
 
-type IOrdersRepository interface{
+type IOrdersRepository interface {
 	FindOneOrder(orderId string) (*orders.Order, error)
 	FindOrder(req *orders.OrderFilter) ([]*orders.Order, int)
 	InsertOrder(req *orders.Order) (string, error)
+	UpdateOrder(req *orders.OrderUpdate) error
 }
 
 type ordersRepository struct {
@@ -71,18 +74,18 @@ func (r *ordersRepository) FindOneOrder(orderId string) (*orders.Order, error) {
 		Products: make([]*orders.ProductsOrder, 0),
 	}
 
-	if err := r.db.Get(&bytes, query, orderId) ; err != nil {
+	if err := r.db.Get(&bytes, query, orderId); err != nil {
 		return nil, fmt.Errorf("cannot get order: %w", err)
 	}
 
 	if err := json.Unmarshal(bytes, &order); err != nil {
 		return nil, fmt.Errorf("unmarshal order failed: %v", err)
 	}
-	
+
 	return order, nil
 }
 
-func (r *ordersRepository) FindOrder(req *orders.OrderFilter) ([]*orders.Order, int){
+func (r *ordersRepository) FindOrder(req *orders.OrderFilter) ([]*orders.Order, int) {
 	builder := ordersPattern.FindOrderBuilder(r.db, req)
 	engineer := ordersPattern.FindOrderEngineer(builder)
 
@@ -97,4 +100,96 @@ func (r *ordersRepository) InsertOrder(req *orders.Order) (string, error) {
 	}
 
 	return orderId, nil
+}
+
+// func (r *ordersRepository) UpdateOrder(req *orders.OrderUpdate) error {
+// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+// 	defer cancel()
+
+// 	query := `
+// 	UPDATE "orders" SET`
+
+// 	values := make([]any, 0)
+// 	lastIndex := 1
+// 	whereStackQuery := make([]string, 0)
+
+// 	if req.Status != "" {
+// 		values = append(values, req.Status)
+// 		whereStackQuery = append(whereStackQuery, fmt.Sprintf(`
+// 		"status" = $%d?`, lastIndex)) // ? มีไว้เพื่อ replace เป็น , ในกรณีที่ไม่ใช่ตัวสุดท้าย
+// 		lastIndex++
+// 	}
+
+// 	if req.TransferSlip != nil {
+// 		values = append(values, req.TransferSlip)
+// 		whereStackQuery = append(whereStackQuery, fmt.Sprintf(`
+// 		"transfer_slip" = $%d?`, lastIndex))
+// 		lastIndex++
+// 	}
+
+// 	values = append(values, req.Id)
+
+// 	for i := range whereStackQuery {
+// 		if i != len(whereStackQuery)-1 {
+// 			query += strings.Replace(whereStackQuery[i], "?", ",", 1)
+// 		} else {
+// 			query += strings.Replace(whereStackQuery[i], "?", "", 1)
+// 		}
+// 	}
+
+// 	queryClose := fmt.Sprintf(`WHERE "id" = $%d;`, lastIndex)
+
+// 	query += queryClose
+
+// 	if _, err := r.db.ExecContext(ctx, query, values...); err != nil {
+// 		return fmt.Errorf("cannot update order: %w", err)
+// 	}
+
+// 	return nil
+// }
+
+func (r *ordersRepository) UpdateOrder(req *orders.OrderUpdate) error {
+	query := `
+	UPDATE "orders" SET`
+
+	queryWhereStack := make([]string, 0)
+	values := make([]any, 0)
+	lastIndex := 1
+
+	if req.Status != "" {
+		values = append(values, req.Status)
+
+		queryWhereStack = append(queryWhereStack, fmt.Sprintf(`
+		"status" = $%d?`, lastIndex))
+
+		lastIndex++
+	}
+
+	if req.TransferSlip != nil {
+		values = append(values, req.TransferSlip)
+
+		queryWhereStack = append(queryWhereStack, fmt.Sprintf(`
+		"transfer_slip" = $%d?`, lastIndex))
+
+		lastIndex++
+	}
+
+	values = append(values, req.Id)
+
+	queryClose := fmt.Sprintf(`
+	WHERE "id" = $%d;`, lastIndex)
+
+	for i := range queryWhereStack {
+		if i != len(queryWhereStack)-1 {
+			query += strings.Replace(queryWhereStack[i], "?", ",", 1)
+		} else {
+			query += strings.Replace(queryWhereStack[i], "?", "", 1)
+		}
+	}
+	query += queryClose
+
+	if _, err := r.db.ExecContext(context.Background(), query, values...); err != nil {
+		return fmt.Errorf("update order failed: %v", err)
+	}
+	return nil
 }
