@@ -1,6 +1,6 @@
 module github.com/NatthawutSK/ri-shop
 
-go 1.21.1
+go 1.20
 
 require (
 	cloud.google.com/go v0.110.8 // indirect

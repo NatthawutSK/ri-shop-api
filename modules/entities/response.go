@@ -38,7 +38,7 @@ func (r *Response) Error(code int, traceId string, msg string) IResponse {
 		Msg:     msg,
 	}
 	r.IsError = true
-	rilogger.InitRiLogger(r.Context, &r.ErrorRes).Print().Save()
+	rilogger.InitRiLogger(r.Context, &r.ErrorRes).Print()
 	return r
 }
 
@@ -46,7 +46,7 @@ func (r *Response) Error(code int, traceId string, msg string) IResponse {
 func (r *Response) Success(code int, data any) IResponse {
 	r.StatusCode = code
 	r.Data = data
-	rilogger.InitRiLogger(r.Context, &r.Data).Print().Save()
+	rilogger.InitRiLogger(r.Context, &r.Data).Print()
 	return r
 }
 
