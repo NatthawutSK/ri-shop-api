@@ -8,7 +8,6 @@ import (
 	"github.com/NatthawutSK/ri-shop/pkg/databases"
 )
 
-
 func envPath() string {
 	if len(os.Args) == 1 {
 		return ".env"
@@ -18,8 +17,8 @@ func envPath() string {
 }
 
 func main() {
-	cfg	:= config.LoadConfig(envPath())
-	
+	cfg := config.LoadConfig(envPath())
+
 	db := databases.DbConnect(cfg.Db())
 	defer db.Close()
 
