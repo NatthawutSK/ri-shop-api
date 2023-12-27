@@ -19,6 +19,7 @@ The project is focused on creating and managing various endpoints, including use
 - Go (v1.16 or higher)
 - PostgreSQL
 - Google Cloud Platform account
+- Docker
 
 ## Getting Started
 
@@ -51,6 +52,10 @@ The project is focused on creating and managing various endpoints, including use
    DB_DATABASE=
    DB_SSL_MODE=
    DB_MAX_CONNECTIONS=
-3. **Run Command:**
+3. **Create and Setup Postgres in Docker:**
+   ```bash
+   docker pull postgres:alpine
+   docker run --name DB_NAME -e POSTGRES_USER=DB_USER -e POSTGRES_PASSWORD=DB_PASS -p PORT:5432 -d postgres:alpine
+4. **Run Command:**
    ```bash
    go run main.go .
