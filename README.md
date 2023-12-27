@@ -24,5 +24,33 @@ The project is focused on creating and managing various endpoints, including use
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/your-repo.git
-   cd your-repo
+   git clone https://github.com/NatthawutSK/ri-shop.git
+2. **Create .env file:**
+   ```bash
+   APP_HOST=
+   APP_PORT=
+   APP_NAME=
+   APP_VERSION=
+   APP_BODY_LIMIT=
+   APP_READ_TIMEOUT=
+   APP_WRITE_TIMEOUT=
+   APP_FILE_LIMIT=
+   APP_GCP_BUCKET=
+   
+   JWT_SECRET_KEY=
+   JWT_API_KEY=
+   JWT_ADMIN_KEY=
+   JWT_ACCESS_EXPIRES=
+   JWT_REFRESH_EXPIRES=
+   
+   DB_HOST=
+   DB_PORT=
+   DB_PROTOCOL=
+   DB_USERNAME=
+   DB_PASSWORD=
+   DB_DATABASE=
+   DB_SSL_MODE=
+   DB_MAX_CONNECTIONS=
+3. **Run Command:**
+   ```bash
+   go run main .
