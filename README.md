@@ -53,4 +53,4 @@ The project is focused on creating and managing various endpoints, including use
    DB_MAX_CONNECTIONS=
 3. **Run Command:**
    ```bash
-   go run main .
+   go run main.go .
