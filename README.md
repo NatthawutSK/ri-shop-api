@@ -9,10 +9,10 @@ The project is focused on creating and managing various endpoints, including use
 ## Features
 
 - **User Management:** Handles user operations such as registration, login, and user profile management.
-- **Authentication:** Implements secure authentication mechanisms for accessing endpoints.
+- **Authentication:** Implements secure authentication mechanisms such as access token and refresh token for accessing endpoints.
 - **Product and Category Management:** Manages products and their categories, supporting CRUD operations.
 - **Order Handling:** Implements functionalities for order creation, modification, and tracking.
-- **Google Cloud Platform Integration:** Enables storage and retrieval of image files in Google Cloud Platform Storage.
+- **Google Cloud Platform Integration:** Enables storage and retrieval of image files in Google Cloud Platform Storage and use Cloud SQL to Deploy databases and Deploy Application on Cloud Run
 
 ## Prerequisites
 
