@@ -18,7 +18,7 @@ The project is focused on creating and managing various endpoints, including use
 
 - Go (v1.16 or higher)
 - PostgreSQL
-- Google Cloud Platform Storage account
+- Google Cloud Platform account
 
 ## Getting Started
 
