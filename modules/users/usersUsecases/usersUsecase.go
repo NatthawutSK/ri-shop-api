@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type IUserUsecase interface{
+type IUserUsecase interface {
 	InsertCustomer(req *users.UserRegisterReq) (*users.UserPassport, error)
 	InsertAdmin(req *users.UserRegisterReq) (*users.UserPassport, error)
 	GetPassport(req *users.UserCredential) (*users.UserPassport, error)
@@ -22,13 +22,12 @@ type IUserUsecase interface{
 type UserUsecase struct {
 	cfg             config.IConfig
 	usersRepository usersRepositories.IUsersRepository
-	
 }
 
 func UserUsecaseHandler(usersRepository usersRepositories.IUsersRepository, cfg config.IConfig) IUserUsecase {
 	return &UserUsecase{
 		usersRepository: usersRepository,
-		cfg: cfg,
+		cfg:             cfg,
 	}
 }
 
@@ -71,31 +70,30 @@ func (u *UserUsecase) GetPassport(req *users.UserCredential) (*users.UserPasspor
 
 	// sign token
 	accessToken, err1 := riAuth.NewRiAuth(riAuth.Access, u.cfg.Jwt(), &users.UserClaims{
-		Id: user.Id,
+		Id:     user.Id,
 		RoleId: user.RoleId,
 	})
 	if err1 != nil {
 		return nil, err
 	}
 	refreshToken, err2 := riAuth.NewRiAuth(riAuth.Refresh, u.cfg.Jwt(), &users.UserClaims{
-		Id: user.Id,
+		Id:     user.Id,
 		RoleId: user.RoleId,
 	})
 	if err2 != nil {
 		return nil, err
 	}
 
-
 	// set passport
 	passport := &users.UserPassport{
 		User: &users.User{
-			Id: user.Id,
-			Email: user.Email,
+			Id:       user.Id,
+			Email:    user.Email,
 			Username: user.Username,
-			RoleId: user.RoleId,
+			RoleId:   user.RoleId,
 		},
 		Token: &users.UserToken{
-			AccessToken: accessToken.SignToken(),
+			AccessToken:  accessToken.SignToken(),
 			RefreshToken: refreshToken.SignToken(),
 		},
 	}
@@ -107,7 +105,7 @@ func (u *UserUsecase) GetPassport(req *users.UserCredential) (*users.UserPasspor
 
 }
 
-
+// use for refresh token
 func (u *UserUsecase) RefreshPassport(req *users.UserRefreshCredential) (*users.UserPassport, error) {
 	claims, err := riAuth.ParseToken(u.cfg.Jwt(), req.RefreshToken)
 	if err != nil {
@@ -127,7 +125,7 @@ func (u *UserUsecase) RefreshPassport(req *users.UserRefreshCredential) (*users.
 	}
 
 	newClaims := &users.UserClaims{
-		Id: profile.Id,
+		Id:     profile.Id,
 		RoleId: profile.RoleId,
 	}
 
@@ -140,8 +138,8 @@ func (u *UserUsecase) RefreshPassport(req *users.UserRefreshCredential) (*users.
 	passport := &users.UserPassport{
 		User: profile,
 		Token: &users.UserToken{
-			Id: oauth.Id,
-			AccessToken: accessToken.SignToken(),
+			Id:           oauth.Id,
+			AccessToken:  accessToken.SignToken(),
 			RefreshToken: refreshToken,
 		},
 	}
@@ -151,7 +149,7 @@ func (u *UserUsecase) RefreshPassport(req *users.UserRefreshCredential) (*users.
 	}
 
 	return passport, nil
-	
+
 }
 
 func (u *UserUsecase) DeleteOauth(oauthId string) error {
@@ -159,7 +157,7 @@ func (u *UserUsecase) DeleteOauth(oauthId string) error {
 		return err
 	}
 	return nil
-	
+
 }
 
 func (u *UserUsecase) GetUserProfile(userId string) (*users.User, error) {
@@ -168,5 +166,5 @@ func (u *UserUsecase) GetUserProfile(userId string) (*users.User, error) {
 		return nil, err
 	}
 	return profile, nil
-	
+
 }

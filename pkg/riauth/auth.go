@@ -38,17 +38,16 @@ type riAuth struct {
 }
 
 type riAdmin struct {
-	*riAuth	
+	*riAuth
 }
 
 type riApiKey struct {
 	*riAuth
 }
 
-
-type riMapClaims struct{
+type riMapClaims struct {
 	Claims *users.UserClaims `json:"claims"`
-	jwt.RegisteredClaims 
+	jwt.RegisteredClaims
 }
 
 func (a *riAuth) SignToken() string {
@@ -69,8 +68,6 @@ func (a *riApiKey) SignToken() string {
 	return ss
 }
 
-
-
 func jwtTimeDuration(t int) *jwt.NumericDate {
 	return jwt.NewNumericDate(time.Now().Add(time.Duration(int64(t) * int64(math.Pow10(9)))))
 }
@@ -79,7 +76,7 @@ func jwtTimeRepeatAdapter(t int64) *jwt.NumericDate {
 	return jwt.NewNumericDate(time.Unix(t, 0))
 }
 
-func ParseToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error){
+func ParseToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &riMapClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("signing method is invalid")
@@ -87,9 +84,9 @@ func ParseToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error)
 		return cfg.SecretKey(), nil
 	})
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenMalformed){
+		if errors.Is(err, jwt.ErrTokenMalformed) {
 			return nil, fmt.Errorf("token format is invalid")
-		} else if errors.Is(err, jwt.ErrTokenExpired){
+		} else if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, fmt.Errorf("token is expired")
 		} else {
 			return nil, fmt.Errorf("parse token  failed : %v", err)
@@ -104,7 +101,7 @@ func ParseToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error)
 
 }
 
-func ParseAdminToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error){
+func ParseAdminToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &riMapClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("signing method is invalid")
@@ -112,9 +109,9 @@ func ParseAdminToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, e
 		return cfg.AdminKey(), nil
 	})
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenMalformed){
+		if errors.Is(err, jwt.ErrTokenMalformed) {
 			return nil, fmt.Errorf("token format is invalid")
-		} else if errors.Is(err, jwt.ErrTokenExpired){
+		} else if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, fmt.Errorf("token is expired")
 		} else {
 			return nil, fmt.Errorf("parse token  failed : %v", err)
@@ -129,7 +126,7 @@ func ParseAdminToken(cfg config.IJwtConfig, tokenString string) (*riMapClaims, e
 
 }
 
-func ParseApiKey(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error){
+func ParseApiKey(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &riMapClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("signing method is invalid")
@@ -137,9 +134,9 @@ func ParseApiKey(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error
 		return cfg.ApiKey(), nil
 	})
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenMalformed){
+		if errors.Is(err, jwt.ErrTokenMalformed) {
 			return nil, fmt.Errorf("token format is invalid")
-		} else if errors.Is(err, jwt.ErrTokenExpired){
+		} else if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, fmt.Errorf("token is expired")
 		} else {
 			return nil, fmt.Errorf("parse token  failed : %v", err)
@@ -154,16 +151,15 @@ func ParseApiKey(cfg config.IJwtConfig, tokenString string) (*riMapClaims, error
 
 }
 
-
-func RepeatToken(cfg config.IJwtConfig, claims *users.UserClaims, exp int64) string{
+func RepeatToken(cfg config.IJwtConfig, claims *users.UserClaims, exp int64) string {
 	obj := &riAuth{
 		cfg: cfg,
 		mapClaims: &riMapClaims{
 			Claims: claims,
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer:    "rishop-api",
-				Subject:  "refresh-token",
-				Audience: []string{"customer", "admin"},
+				Subject:   "refresh-token",
+				Audience:  []string{"customer", "admin"},
 				ExpiresAt: jwtTimeRepeatAdapter(exp),
 				NotBefore: jwt.NewNumericDate(time.Now()),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -174,13 +170,12 @@ func RepeatToken(cfg config.IJwtConfig, claims *users.UserClaims, exp int64) str
 
 }
 
-
-func NewRiAuth(tokenType TokenType,cfg config.IJwtConfig, claims *users.UserClaims) (IRiAuth, error) {
+func NewRiAuth(tokenType TokenType, cfg config.IJwtConfig, claims *users.UserClaims) (IRiAuth, error) {
 	switch tokenType {
 	case Access:
-		return newAccessToken(cfg , claims), nil
+		return newAccessToken(cfg, claims), nil
 	case Refresh:
-		return newRefreshToken(cfg , claims), nil
+		return newRefreshToken(cfg, claims), nil
 	case Admin:
 		return newAdminToken(cfg), nil
 	case ApiKey:
@@ -188,11 +183,9 @@ func NewRiAuth(tokenType TokenType,cfg config.IJwtConfig, claims *users.UserClai
 	default:
 		return nil, fmt.Errorf("unknown token type")
 
-
-	// return nil, nil
+		// return nil, nil
+	}
 }
-}
-
 
 func newAccessToken(cfg config.IJwtConfig, claims *users.UserClaims) IRiAuth {
 	return &riAuth{
@@ -201,8 +194,8 @@ func newAccessToken(cfg config.IJwtConfig, claims *users.UserClaims) IRiAuth {
 			Claims: claims,
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer:    "rishop-api",
-				Subject:  "access-token",
-				Audience: []string{"customer", "admin"},
+				Subject:   "access-token",
+				Audience:  []string{"customer", "admin"},
 				ExpiresAt: jwtTimeDuration(cfg.AccessExpiresAt()),
 				NotBefore: jwt.NewNumericDate(time.Now()),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -218,8 +211,8 @@ func newRefreshToken(cfg config.IJwtConfig, claims *users.UserClaims) IRiAuth {
 			Claims: claims,
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer:    "rishop-api",
-				Subject:  "refresh-token",
-				Audience: []string{"customer", "admin"},
+				Subject:   "refresh-token",
+				Audience:  []string{"customer", "admin"},
 				ExpiresAt: jwtTimeDuration(cfg.RefreshExpiresAt()),
 				NotBefore: jwt.NewNumericDate(time.Now()),
 				IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -236,15 +229,14 @@ func newAdminToken(cfg config.IJwtConfig) IRiAuth {
 				Claims: nil,
 				RegisteredClaims: jwt.RegisteredClaims{
 					Issuer:    "rishop-api",
-					Subject:  "admin-token",
-					Audience: []string{"admin"},
+					Subject:   "admin-token",
+					Audience:  []string{"admin"},
 					ExpiresAt: jwtTimeDuration(300),
 					NotBefore: jwt.NewNumericDate(time.Now()),
 					IssuedAt:  jwt.NewNumericDate(time.Now()),
 				},
 			},
 		},
-
 	}
 }
 
@@ -256,18 +248,13 @@ func newApiKey(cfg config.IJwtConfig) IRiAuth {
 				Claims: nil,
 				RegisteredClaims: jwt.RegisteredClaims{
 					Issuer:    "rishop-api",
-					Subject:  "api-key",
-					Audience: []string{"admin", "customer"},
-					ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(2,0,0)),
+					Subject:   "api-key",
+					Audience:  []string{"admin", "customer"},
+					ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(2, 0, 0)),
 					NotBefore: jwt.NewNumericDate(time.Now()),
 					IssuedAt:  jwt.NewNumericDate(time.Now()),
 				},
 			},
 		},
-
 	}
 }
-
-
-
-

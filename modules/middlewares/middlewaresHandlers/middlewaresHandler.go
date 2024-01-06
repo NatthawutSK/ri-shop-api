@@ -1,6 +1,7 @@
 package middlewaresHandlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -95,6 +96,7 @@ func (h *middlewaresHandler) JwtAuth() fiber.Handler {
 				err.Error(),
 			).Res()
 		}
+		fmt.Println(result.Claims)
 
 		claims := result.Claims
 		if !h.middlewaresUsecase.FindAccessToken(claims.Id, token) {

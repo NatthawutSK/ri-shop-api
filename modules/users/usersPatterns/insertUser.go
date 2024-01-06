@@ -17,11 +17,10 @@ type IInsertUser interface {
 }
 
 type userReq struct {
-	id string
+	id  string
 	req *users.UserRegisterReq
-	db *sqlx.DB
+	db  *sqlx.DB
 }
-
 
 type customer struct {
 	*userReq
@@ -38,22 +37,21 @@ func InsertUser(db *sqlx.DB, req *users.UserRegisterReq, isAdmin bool) IInsertUs
 	return newAdmin(db, req)
 }
 
-
 func newCustomer(db *sqlx.DB, req *users.UserRegisterReq) IInsertUser {
 	return &customer{
 		userReq: &userReq{
 			req: req,
-			db: db,
+			db:  db,
 		},
 	}
-	
+
 }
 
 func newAdmin(db *sqlx.DB, req *users.UserRegisterReq) IInsertUser {
 	return &admin{
 		userReq: &userReq{
 			req: req,
-			db: db,
+			db:  db,
 		},
 	}
 }
@@ -75,26 +73,24 @@ func (f *userReq) Customer() (IInsertUser, error) {
 	if err := f.db.QueryRowContext(ctx,
 		query,
 		f.req.Email,
-		f.req.Password, 
+		f.req.Password,
 		f.req.Username,
-		).Scan(&f.id); err != nil {
-			switch err.Error() {
-			case "ERROR: duplicate key value violates unique constraint \"users_username_key\" (SQLSTATE 23505)":
-				return nil, fmt.Errorf("username has been used")
-			case "ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)":
-				return nil, fmt.Errorf("email has been used")
-			default:
-				return nil, fmt.Errorf("insert user failed: %v", err)
-			}
+	).Scan(&f.id); err != nil {
+		switch err.Error() {
+		case "ERROR: duplicate key value violates unique constraint \"users_username_key\" (SQLSTATE 23505)":
+			return nil, fmt.Errorf("username has been used")
+		case "ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)":
+			return nil, fmt.Errorf("email has been used")
+		default:
+			return nil, fmt.Errorf("insert user failed: %v", err)
 		}
+	}
 	return f, nil
 }
-
 
 func (f *userReq) Admin() (IInsertUser, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
 
 	query := `
 	INSERT INTO "users" (
@@ -109,18 +105,18 @@ func (f *userReq) Admin() (IInsertUser, error) {
 	if err := f.db.QueryRowContext(ctx,
 		query,
 		f.req.Email,
-		f.req.Password, 
+		f.req.Password,
 		f.req.Username,
-		).Scan(&f.id); err != nil {
-			switch err.Error() {
-			case "ERROR: duplicate key value violates unique constraint \"users_username_key\" (SQLSTATE 23505)":
-				return nil, fmt.Errorf("username has been used")
-			case "ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)":
-				return nil, fmt.Errorf("email has been used")
-			default:
-				return nil, fmt.Errorf("insert user failed: %v", err)
-			}
+	).Scan(&f.id); err != nil {
+		switch err.Error() {
+		case "ERROR: duplicate key value violates unique constraint \"users_username_key\" (SQLSTATE 23505)":
+			return nil, fmt.Errorf("username has been used")
+		case "ERROR: duplicate key value violates unique constraint \"users_email_key\" (SQLSTATE 23505)":
+			return nil, fmt.Errorf("email has been used")
+		default:
+			return nil, fmt.Errorf("insert user failed: %v", err)
 		}
+	}
 	return f, nil
 }
 
@@ -153,7 +149,4 @@ func (f *userReq) Result() (*users.UserPassport, error) {
 		return nil, fmt.Errorf("unmarshal user failed: %v", err)
 	}
 	return user, nil
-
-
-	
 }

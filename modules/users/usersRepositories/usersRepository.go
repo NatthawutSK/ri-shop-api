@@ -10,7 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type IUsersRepository interface{
+type IUsersRepository interface {
 	InsertUser(req *users.UserRegisterReq, isAdmin bool) (*users.UserPassport, error)
 	FindOneUserByEmail(email string) (*users.UserCredentialCheck, error)
 	InsertOauth(req *users.UserPassport) error
@@ -23,7 +23,6 @@ type IUsersRepository interface{
 type usersRepository struct {
 	db *sqlx.DB
 }
-
 
 func UsersRepositoryHandler(db *sqlx.DB) IUsersRepository {
 	return &usersRepository{
@@ -47,13 +46,12 @@ func (r *usersRepository) InsertUser(req *users.UserRegisterReq, isAdmin bool) (
 		}
 	}
 
-	user ,err := result.Result()
+	user, err := result.Result()
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
-
 
 func (r *usersRepository) FindOneUserByEmail(email string) (*users.UserCredentialCheck, error) {
 	query := `
@@ -72,8 +70,7 @@ func (r *usersRepository) FindOneUserByEmail(email string) (*users.UserCredentia
 	return user, nil
 }
 
-
-func (r *usersRepository) InsertOauth(req *users.UserPassport) error{
+func (r *usersRepository) InsertOauth(req *users.UserPassport) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -98,8 +95,7 @@ func (r *usersRepository) InsertOauth(req *users.UserPassport) error{
 	return nil
 }
 
-
-func (r *usersRepository) FindOneOauth(refreshToken string) (*users.Oauth, error){
+func (r *usersRepository) FindOneOauth(refreshToken string) (*users.Oauth, error) {
 	query := `
 	SELECT
 		"id",
@@ -127,7 +123,6 @@ func (r *usersRepository) UpdateOauth(req *users.UserToken) error {
 	return nil
 }
 
-
 func (r *usersRepository) GetProfile(userId string) (*users.User, error) {
 	query := `
 	SELECT
@@ -144,7 +139,6 @@ func (r *usersRepository) GetProfile(userId string) (*users.User, error) {
 	}
 	return profile, nil
 }
-
 
 func (r *usersRepository) DeleteOauth(oauthId string) error {
 	query := `
