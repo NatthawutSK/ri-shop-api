@@ -23,7 +23,7 @@ RUN go mod download
 RUN CGO_ENABLED=0 go build -o myapp main.go
 
 ## Deploy
-FROM gcr.io/distroless/static-debian11
+FROM debian:buster-slim
 
 COPY --from=build /app/myapp /bin
 COPY .env.prod /bin
